@@ -1,41 +1,51 @@
 <template>
 	<div v-if="status == 2">
-		<div >
+		<div class="container pt-5">
 			<div class="row">
 				<div class="col-3">
 					<h4>Players</h4>
-					<ul>
-						<li v-for="participant in this.participants" :key="participant.id">
-							{{ participant.username }}
-						</li>
+					<ul class="list-group list-group-flush">
+						<li class="list-group-item" v-for="participant in this.participants" :key="participant.id">{{ participant.username }}</li>
 					</ul>
 				</div>
 				<div class="col-9" v-if="admin">
 					<div class="row">
 						<div class="col p-5">
-							<button class="btn btn-primary" v-on:click="gameA()">Two truths One lie</button>
+							<button class="btn btn-primary btn-games color2" v-on:click="gameA()">Two truths One lie</button>
 						</div>
 						<div class="col p-5">
-							<button class="btn btn-primary">Would you rather...?</button>
+							<button class="btn btn-primary btn-games color1">Would you rather...? (Coming soon)</button>
 						</div>
 					</div>
 					<div class="row">
 						<div class="col p-5">
-							<button class="btn btn-primary">Where are you joining from? (Coming soon)</button>
+							<button class="btn btn-primary btn-games color1">Where are you joining from? (Coming soon)</button>
 						</div>
 						<div class="col p-5">
-							<button class="btn btn-primary">Rank movies (Coming soon)</button>
+							<button class="btn btn-primary btn-games color3">Rank movies (Coming soon)</button>
 						</div>
 					</div>
 				</div>
 				<div class="col-9" v-if="!admin">
 					<div class="row">
-						<p>host is choosing game</p>
+						<div class="col p-5">
+							<button class="btn btn-primary btn-games color2">Two truths One lie</button>
+						</div>
+						<div class="col p-5">
+							<button class="btn btn-primary btn-games color1">Would you rather...? (Coming soon)</button>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col p-5">
+							<button class="btn btn-primary btn-games color1">Where are you joining from? (Coming soon)</button>
+						</div>
+						<div class="col p-5">
+							<button class="btn btn-primary btn-games color3">Rank movies (Coming soon)</button>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-
 	</div>
 	<TwoTruthsOneLie v-else-if="3 <= status <= 5" />
 </template>
@@ -69,7 +79,7 @@ export default {
 	},
 	methods: {
 		gameA() {
-			this.io.emit("game:choose", {status:3})
+			this.io.emit("game:choose", { status: 3 })
 			this.$store.commit("updateStatus", 3)
 		},
 		waitGameStart() {
@@ -88,7 +98,23 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-img {
-	width: 500px;
+.list-group-item {
+	background: none;
+	color: white;
+	border-color: white;
+}
+.btn-games {
+	height: 170px;
+	width: 170px;
+	color:black;
+}
+.color1{
+	background: #A7D1CE;
+}
+.color2{
+	background: #4BADCE;
+}
+.color3{
+	background: #79BFCE;
 }
 </style>
