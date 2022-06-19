@@ -85,12 +85,17 @@
 					</div>
 					<div class="pt-3">
 						<ul class="list-group list-group-flush">
-							<li class="list-group-item" v-for="player in statement.votes" :key="player.id">{{
-									player.username
-							}}</li>
+							<li class="list-group-item" v-for="player in statement.votes" :key="player.id">
+								<em class="material-icons" v-if="!statement.answer">star_border</em>
+								<p style="margin: 0;">{{ player.username }}</p>
+							</li>
 						</ul>
 					</div>
 				</div>
+			</div>
+			<div class="pt-5" v-if="this.currentPlayer.username != this.username">
+				<h1 v-if="this.isPlayerCorrect()">You are correct!</h1>
+				<h1 v-else>You got it wrong :(</h1>
 			</div>
 			<div class="pt-5">
 				<button type="button" class="btn btn-outline-light" v-if="admin" v-on:click="next()">Next</button>
@@ -174,6 +179,14 @@ export default {
 			this.io.on('game_A:finish', () => {
 				this.$store.commit("updateStatus", 2)
 			})
+		},
+		isPlayerCorrect() {
+			let statement = this.currentPlayer.statements.filter((statement) => !statement.answer)[0];
+			let player = statement.votes.filter((vote) => vote.username == this.username);
+			if (player.length > 0) {
+				return true
+			}
+			return false
 		}
 	}
 }
@@ -209,5 +222,13 @@ export default {
 	background: none;
 	color: white;
 	border-color: white;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+}
+
+em {
+	font-size: 20px;
+	padding-right: 6px;
 }
 </style>
