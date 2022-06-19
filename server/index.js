@@ -6,15 +6,13 @@ const cors = require("cors")
 // const mongoose = require('mongoose');
 require("dotenv").config();
 
-const { generateRoomCode } = require('./src/utils')
+const { generateRoomCode, shuffleArray } = require('./src/utils')
 const { Users } = require('./src/models/Users');
-const { Console } = require('console');
+const { TwoTruthsOneLie } = require('./src/models/TwoTruthsOneLie')
 
 const PORT = 8080 || process.env.PORT
 let users = new Users();
-
-// const User = require("./models/User");
-// const { Console } = require('console');
+let twoTruthsOneLie = new TwoTruthsOneLie();
 
 app.use(cors())
 
@@ -27,11 +25,6 @@ const io = new Server(server, {
 	}
 });
 
-// //Set up default mongoose connection
-// mongoose.connect(
-// 	process.env.URI, 
-// 	{useNewUrlParser: true, useUnifiedTopology: true}
-// );
 
 // app.get('/generate-code', (req, res) => {
 // 	res.send()
@@ -62,17 +55,69 @@ io.on('connection', (socket) => {
 		users.addUser(socket.id, data.username, data.room);
 		console.log(`${data.username} has joined ${data.room}`)
 		io.to(data.room).emit('room:update_users', users.getUsers(data.room));
-		console.log(users.getUsers(data.room));
 	});
 
-	socket.on('send', (data) => {
-		//send everyone but yourself
-		socket.broadcast.emit("receive", data)
+	// START GAME
+	socket.on('game:start', () => {
+		const user = users.getUser(socket.id)
+		const players = users.getUsers(user.room)
+		console.log(`Game started in room ${user.room}`);
+		console.log('Players:');
+		console.log(players);
+		io.to(user.room).emit('game:start');
+	});
 
-		// send to specific room
-		//socket.to(data.room).emit("receive_message", data)
+
+	socket.on('game:choose', (data) => {
+		const user = users.getUser(socket.id)
+		console.log(`${user.room} started game ${data.status}`);
+		io.to(user.room).emit('game:choosen', data);
+	});
+
+	// User disconnect
+	socket.on('disconnect', () => {
+		let user = users.removeUser(socket.id);
+		if (user) {
+			io.to(user.room).emit('room:update', users.getUsers(user.room));
+		}
+	});
+
+	socket.on('game_A:submit', (data) => {
+		const user = users.getUser(socket.id)
+		let statements = []
+		statements.push({statement: data.t1, answer: true, votes:[]})
+		statements.push({statement: data.t2, answer: true, votes:[]})
+		statements.push({statement: data.l, answer: false, votes:[]})
+		statements = shuffleArray(statements)
+
+	
+		const full = twoTruthsOneLie.addPlayer(user.room, users.getRoomSize(user.room), user.id, user.username, statements)
+		if (full){
+			io.to(user.room).emit('game_A:all_players_submitted', twoTruthsOneLie.getOnePlayerStatement(user.room));
+		}
 
 	});
+
+	socket.on('game_A:voted', (data) => {
+		const user = users.getUser(socket.id)
+		const player = twoTruthsOneLie.addVote(user.room, data.player.id, user, data.selectedIndex)
+		if (player){
+			io.to(user.room).emit('game_A:all_players_voted', player);
+		}
+
+	});
+
+	socket.on('game_A:next_player', (data) => {
+		const user = users.getUser(socket.id)
+		let nextPlayer = twoTruthsOneLie.getOnePlayerStatement(user.room)
+		if (nextPlayer) {
+			io.to(user.room).emit('game_A:next_player', nextPlayer);
+		} else {
+			io.to(user.room).emit('game_A:finish');
+		}
+		
+	});
+
 });
 
 // Start server

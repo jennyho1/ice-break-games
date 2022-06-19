@@ -20,6 +20,7 @@
 				<div>
 					<p v-for="participant in this.participants" :key="participant.id">{{ participant.username }}</p>
 				</div>
+				<button v-if="admin" v-on:click="startGame()">Start Game</button>
 			</div>
 		</div>
 	</div>
@@ -45,19 +46,15 @@ export default {
 
 			// create room and add this user
 			this.io.emit("room:create", { username: this.username }, (callback) => {
+				console.log(callback)
 				this.room = callback
+				this.$store.commit("setRoom", this.room)
+				this.$store.commit("setUsername", this.username)
 			})
-
-			// // room created and 
-			// this.io.on("room:created", (data) => {
-			// 	this.room = data.roomCode
-			// })
-
-			// this.io.on("room:joined", (data) => {
-			// 	this.participants = this.participants.concat(data);
-			// })
 			this.admin = true
+			this.$store.commit("setAdmin", true)
 			this.joined = true
+			
 			this.watchUsers()
 		},
 		joinGame() {
@@ -69,18 +66,32 @@ export default {
 			}
 			this.joined = true
 			this.io.emit("room:join", { room: this.room, username: this.username })
-			// this.io.on("room:joined", (data) => {
-			// 	this.participants = this.participants.concat(data);
-
-			// })
+			this.$store.commit("setRoom", this.room)
+			this.$store.commit("setUsername", this.username)
 			this.watchUsers()
+			this.waitGameStart()
 		},
 		watchUsers() {
 			this.io.on('room:update_users', (users) => {
 				this.participants = users
-				console.log(users)
 			})
-		}
+		},
+		startGame(){
+			this.io.emit("game:start")
+			console.log("game started")
+			this.$store.commit("updateStatus", 2)
+			this.$store.commit("setIO", this.io)
+			this.$store.commit("setPlayers", this.participants)
+		},
+		waitGameStart(){
+			this.io.on('game:start', () => {
+				console.log("game started")
+				this.$store.commit("updateStatus", 2)
+				this.$store.commit("setIO", this.io)
+				this.$store.commit("setPlayers", this.participants)
+			})
+		},
+
 	}
 }
 </script>
